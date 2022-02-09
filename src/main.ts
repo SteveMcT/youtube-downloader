@@ -8,20 +8,28 @@ async function main() {
     values: ["mp3", "mp4"],
     valueRenderer: (value, selected) => {
       if (selected) {
-        return chalk.underline(value);
+        return chalk.green.underline(value);
       }
       return value;
     },
-  }).then(async (v) => {
-    console.log(v);
+  })
+    .then(async (v) => {
+      const file = readFileSync("./links.txt", "utf8");
+      const links: string[] = file.split("\n");
 
-    const file = readFileSync("./links.txt", "utf8");
-    const links: string[] = file.split("\n");
+      if (v.value == "mp3") {
+        for await (const link of links.map(async (e) => await Download.downloadMP3(e))) {
+        }
+      }
 
-    for await (const link of links.map(async (e) => await Download.download(e))) {
-      console.log(link);
-    }
-  });
+      if (v.value == "mp4") {
+        for await (const link of links.map(async (e) => await Download.downloadMP4(e))) {
+        }
+      }
+    })
+    .catch((e) => {
+      chalk.red("An Error occurred");
+    });
 }
 
 main();

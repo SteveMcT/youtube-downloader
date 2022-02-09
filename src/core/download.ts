@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import Downloader from "nodejs-file-downloader";
 import youtubedl from "youtube-dl-exec";
 import Files from "./files";
@@ -5,11 +6,14 @@ import Files from "./files";
 class Download {
   OUTPUTSTRINGLENGTH: number = 0;
 
-  public async download(link: string) {
-    console.log("Downloading " + link);
+  public async downloadMP4(link: string) {
+    if (link === undefined) return;
+
+    console.log(chalk.green("starting downloading " + link));
 
     // initialize Downloader
     youtubedl(link, {
+      ffmpegLocation: "node_modules/ffmpeg",
       dumpSingleJson: true,
       noCheckCertificate: true,
       preferFreeFormats: true,
@@ -34,6 +38,26 @@ class Download {
 
       console.log(name + " Done");
       return;
+    });
+  }
+
+  public async downloadMP3(link: string) {
+    if (link === undefined) return;
+
+    // console.log(chalk.green("starting downloading " + link));
+
+    // ytdl(link).pipe(createWriteStream("../../downloads/" + link.split("=")[1] + ".mp3"));
+
+    // ytdl(link).then(async (output) => {
+    //   console.log(chalk.green("Downloaded ", output.title));
+
+    // })
+
+    youtubedl(link, {
+      downloadArchive: "/downloads/",
+      output: "/downloads/" + link,
+    }).then(async (output) => {
+      console.log(output);
     });
   }
 
