@@ -1,15 +1,14 @@
-import chalk from "chalk";
+import { MultiBar } from "cli-progress";
+import ffmpeg from "ffmpeg";
 import Downloader from "nodejs-file-downloader";
-import youtubedl from "youtube-dl-exec";
+import { default as youtubedl, default as youtubeDlExec } from "youtube-dl-exec";
 import Files from "./files";
 
 class Download {
   OUTPUTSTRINGLENGTH: number = 0;
 
-  public async downloadMP4(link: string) {
+  public async downloadMP4(bar: MultiBar, link: string) {
     if (link === undefined) return;
-
-    console.log(chalk.green("starting downloading " + link));
 
     // initialize Downloader
     youtubedl(link, {
@@ -20,59 +19,97 @@ class Download {
       youtubeSkipDashManifest: true,
       referer: "https://youtube.com",
     }).then(async (output) => {
-      const name = output.title;
+      let goahead = true;
+      output.formats.forEach(async (element) => {
+        if (element.acodec == "mp4a.40.2" && element.filesize && goahead) {
+          goahead = false;
+          const barItem = bar.create(element.filesize, 0);
+          const name = output.title;
 
-      // print current status of the download in console
-      const filesize = output.formats[output.formats.length - 1].filesize;
-      setInterval(() => {
-        this.syncProgress(filesize, Files.getFilesize(name + ".mp4.download"));
-      }, 100);
+          // print current status of the download in console
+          const int = setInterval(() => {
+            barItem.update(Files.getFilesize(name + ".mp4.download"));
+          }, 100);
 
-      // download video
-      const downloader = new Downloader({
-        url: output.formats[output.formats.length - 1].url,
-        directory: "/downloads",
-        fileName: name + ".mp4",
+          // download video
+          const downloader = new Downloader({
+            url: element.url,
+            directory: "downloads",
+            fileName: name + ".mp4",
+          });
+          await downloader.download();
+          clearInterval(int);
+          barItem.update(element.filesize);
+
+          return;
+        }
       });
-      await downloader.download();
-
-      console.log(name + " Done");
-      return;
     });
   }
 
-  public async downloadMP3(link: string) {
+  public async downloadMP3(bar: MultiBar, link: string) {
     if (link === undefined) return;
 
-    // console.log(chalk.green("starting downloading " + link));
-
-    // ytdl(link).pipe(createWriteStream("../../downloads/" + link.split("=")[1] + ".mp3"));
-
-    // ytdl(link).then(async (output) => {
-    //   console.log(chalk.green("Downloaded ", output.title));
-
-    // })
-
-    youtubedl(link, {
-      downloadArchive: "/downloads/",
-      output: "/downloads/" + link,
+    // get mp3 from youtube and download
+    youtubeDlExec(link, {
+      ffmpegLocation: "node_modules/ffmpeg",
+      dumpSingleJson: true,
+      noCheckCertificate: true,
+      preferFreeFormats: true,
+      youtubeSkipDashManifest: true,
+      referer: "https://youtube.com",
     }).then(async (output) => {
-      console.log(output);
+      let goahead = true;
+
+      // create reverse foreach
+      for (let i = output.formats.length - 1; i >= 0; i--) {
+        const element = output.formats[i];
+        if (element.acodec == "opus" && element.filesize && goahead) {
+          goahead = false;
+
+          const barItem = bar.create(element.filesize, 0);
+          const name = output.title.replace(" ", "-");
+
+          // print current status of the download in console
+          const int = setInterval(() => {
+            barItem.update(Files.getFilesize(name + ".webm.download"));
+          }, 100);
+
+          // download video
+          const downloader = new Downloader({
+            url: element.url,
+            directory: "downloads",
+            fileName: name + ".webm",
+          });
+
+          await downloader.download();
+          clearInterval(int);
+          barItem.update(element.filesize);
+
+          // use ffmpeg to convert webm to mp3
+          const process = new ffmpeg("downloads/" + name + ".webm");
+
+          process.then((converter) => {
+            console.log("Start converting ", name);
+
+            converter.fnExtractSoundToMP3("downloads/" + name + ".mp3", (err) => {
+              console.log(name + err ? "was not converted" : "was converted");
+              console.log(err);
+              return;
+            });
+
+            // converter
+            //   .setAudioCodec("libfaac")
+            //   .setAudioBitRate(128)
+            //   .setAudioChannels(2)
+            //   .setVideoFormat("mp3")
+            //   .save("downloads/" + name + ".mp3"
+          });
+
+          return;
+        }
+      }
     });
-  }
-
-  private async syncProgress(currentSize: number, maxSize: number) {
-    let counter = this.OUTPUTSTRINGLENGTH;
-
-    while (counter >= 0) {
-      process.stdout.write("\b");
-      counter--;
-    }
-
-    const str = maxSize === -1 ? "Starting..." : currentSize + " " + maxSize + " " + Math.round((maxSize / currentSize) * 100) + "%";
-    this.OUTPUTSTRINGLENGTH = str.length;
-
-    process.stdout.write(str);
   }
 }
 
