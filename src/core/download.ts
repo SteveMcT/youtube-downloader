@@ -8,9 +8,9 @@ class Download {
   OUTPUTSTRINGLENGTH: number = 0;
 
   public async downloadMP3(bar: MultiBar, link: string): Promise<boolean> {
-    return new Promise((res) => {
-      if (link === undefined) return;
+    if (!link) return;
 
+    return new Promise((res) => {
       // get mp3 from youtube and download
       youtubeDlExec(link, {
         ffmpegLocation: "node_modules/ffmpeg",
@@ -31,6 +31,8 @@ class Download {
 
               const barItem = bar.create(element.filesize, 0);
               const name = output.title.replace(/[()\| "§$%/&=?*:;,']/g, "");
+              const saveName = name.replace(/([a-z])([A-Z])/g, "$1 $2");
+
               // print current status of the download in console
               const int = setInterval(() => {
                 barItem.update(Files.getFilesize(name + ".webm.download"));
@@ -41,10 +43,10 @@ class Download {
               clearInterval(int);
               barItem.update(element.filesize);
               barItem.stop();
+              bar.remove(barItem);
 
               // wait if file is downloaded
-              await Files.convertToMP3(name);
-              Files.removeFile(name);
+              await Files.convertToMP3(name, saveName);
               res(true);
             }
           }
@@ -95,7 +97,7 @@ class Download {
     const links = await ytpl(playlistID);
     let urls: string[] = [];
     links.items.forEach((item) => {
-      urls.push(item.url.split("&list")[0]);
+      urls.push(item.url);
     });
     return urls;
   }
@@ -106,7 +108,8 @@ class Download {
         url: url,
         directory: "downloads",
         fileName: name + type,
-        maxAttempts: 10,
+        maxAttempts: 2,
+        timeout: 20000,
       });
 
       await downloader.download();
