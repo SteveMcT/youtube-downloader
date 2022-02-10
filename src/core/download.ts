@@ -1,4 +1,4 @@
-import { MultiBar } from "cli-progress";
+import { MultiBar, SingleBar } from "cli-progress";
 import Downloader from "nodejs-file-downloader";
 import { default as youtubedl, default as youtubeDlExec } from "youtube-dl-exec";
 import ytpl from "ytpl";
@@ -33,14 +33,9 @@ class Download {
               const name = output.title.replace(/[()\| "§$%/&=?*:;,']/g, "");
               const saveName = name.replace(/([a-z])([A-Z])/g, "$1 $2");
 
-              // print current status of the download in console
-              const int = setInterval(() => {
-                barItem.update(Files.getFilesize(name + ".webm.download"));
-              }, 100);
+              // destroy download if file stops to download
+              await this.download(element.url, name, ".webm", barItem);
 
-              // download video
-              await this.download(element.url, name, ".webm");
-              clearInterval(int);
               barItem.update(element.filesize);
               barItem.stop();
               bar.remove(barItem);
@@ -82,7 +77,7 @@ class Download {
           }, 100);
 
           // download video
-          await this.download(element.url, name, ".mp4");
+          // await this.download(element.url, name, ".mp4");
 
           clearInterval(int);
           barItem.update(element.filesize);
@@ -102,7 +97,7 @@ class Download {
     return urls;
   }
 
-  private async download(url: string, name: string, type: string) {
+  private async download(url: string, name: string, type: string, barItem: SingleBar) {
     try {
       const downloader = new Downloader({
         url: url,
@@ -110,6 +105,7 @@ class Download {
         fileName: name + type,
         maxAttempts: 2,
         timeout: 20000,
+        onProgress: () => barItem.update(Files.getFilesize(name + ".webm.download")),
       });
 
       await downloader.download();

@@ -43,8 +43,9 @@ async function main() {
         let i = 0;
 
         setInterval(async () => {
-          if (activeDownloads <= 14 && i < linksToDownload.length) {
+          if (activeDownloads <= 20 && i < linksToDownload.length) {
             Download.downloadMP3(bar, linksToDownload[i]).finally(() => {
+              console.log("Hello Finished World :3");
               activeDownloads--;
 
               if (i == linksToDownload.length) {
@@ -56,7 +57,7 @@ async function main() {
             i++;
             activeDownloads++;
           }
-        }, 100);
+        }, 140);
       } else if (v.value === "mp4") {
         for (const link of links) {
           Download.downloadMP4(bar, link);
