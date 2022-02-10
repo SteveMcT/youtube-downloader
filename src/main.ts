@@ -7,9 +7,7 @@ import Download from "./core/download";
 async function main() {
   console.log(chalk.blue("Welcome to the YouTube Downloader!"));
   console.log(chalk.blueBright("You need to have ffmpeg installed to use this tool."));
-  console.log(chalk.blueBright("On Windows you can install ffmpeg from https://ffmpeg.zeranoe.com/builds/"));
-  console.log(chalk.blueBright("On Linux you can install ffmpeg from https://ffmpeg.org/download.html"));
-  console.log(chalk.blueBright("On MacOS you can install ffmpeg from https://ffmpeg.zeranoe.com/builds/"));
+  console.log(chalk.blueBright("Look inside the guide."));
 
   cliSelect({
     values: ["mp3", "mp4"],
@@ -35,13 +33,39 @@ async function main() {
         stopOnComplete: true,
       });
 
-      if (v.value == "mp3") {
-        for (const link of links) {
-          Download.downloadMP3(bar, link);
+      if (v.value === "mp3") {
+        // adding all links to an array
+        let linksToDownload: string[] = [];
+
+        for (let link of links) {
+          if (link.slice(0, 3) === "PL:") {
+            const l = link.split("PL:")[1];
+            const playlist = await Download.getLinksFromPlaylist(l);
+            linksToDownload.push(...playlist);
+          } else {
+            linksToDownload.push(link);
+          }
         }
+
+        linksToDownload = linksToDownload.reverse();
+
+        linksToDownload[Symbol.asyncIterator] = async function* () {
+          for (let link of linksToDownload) {
+            await Download.downloadMP3(bar, link);
+            yield { value: link, done: false };
+          }
+
+          yield { done: true };
+        };
+
+        (async function () {
+          for await (const part of linksToDownload) {
+            console.log(part);
+          }
+        })();
       }
 
-      if (v.value == "mp4") {
+      if (v.value === "mp4") {
         for (const link of links) {
           Download.downloadMP4(bar, link);
         }
