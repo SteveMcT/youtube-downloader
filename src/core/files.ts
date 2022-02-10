@@ -1,5 +1,5 @@
 import ffmpeg from "ffmpeg";
-import { statSync, unlinkSync } from "fs";
+import { readdirSync, rename, statSync, unlinkSync } from "fs";
 
 export default class Files {
   public static getFilesize(fileName: string): number {
@@ -11,13 +11,18 @@ export default class Files {
     }
   }
 
-  public static convertToMP3(name: string): Promise<boolean> {
+  public static convertToMP3(name: string, saveName: string): Promise<boolean> {
     return new Promise((res) => {
       const process = new ffmpeg("downloads/" + name + ".webm");
 
       process.then((converter) => {
         converter.fnExtractSoundToMP3("downloads/" + name + ".mp3", (err) => {
           if (err) console.log(err);
+
+          rename("downloads/" + name + ".mp3", "downloads/" + saveName + ".mp3", (err) => {
+            if (err) console.log(err);
+          });
+
           res(true);
         });
       });
@@ -26,7 +31,6 @@ export default class Files {
 
   public static removeFile(name: string) {
     try {
-      name += ".webm";
       var file = statSync("downloads/" + name);
       if (file.size > 0) {
         unlinkSync("downloads/" + name);
@@ -34,5 +38,18 @@ export default class Files {
     } catch (e) {
       console.log(e);
     }
+  }
+
+  public static removeFilesWhichAreNotMP3() {
+    return new Promise((res) => {
+      const files = readdirSync("downloads");
+
+      files.forEach((file) => {
+        if (!file.endsWith(".mp3")) {
+          this.removeFile(file);
+        }
+      });
+      res("done");
+    });
   }
 }

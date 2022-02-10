@@ -19,3 +19,8 @@ Just add it line by line or if you want to download a Playlist, just select the 
 ## Start the download
 
 Just open the tool and select if you want to download all links as mp3 or mp4 and let it do it's work.
+
+## Keep in mind
+
+The downloader DOES NOT have a 100% success rate when downloading data.
+It's just a tool to help you gettings music.

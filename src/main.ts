@@ -3,6 +3,8 @@ import { MultiBar } from "cli-progress";
 import cliSelect from "cli-select-2";
 import { readFileSync } from "fs";
 import Download from "./core/download";
+import Files from "./core/files";
+import Links from "./core/links";
 
 async function main() {
   console.log(chalk.blue("Welcome to the YouTube Downloader!"));
@@ -35,34 +37,24 @@ async function main() {
 
       if (v.value === "mp3") {
         // adding all links to an array
-        let linksToDownload: string[] = [];
-
-        for (let link of links) {
-          if (link.slice(0, 3) === "PL:") {
-            const l = link.split("PL:")[1];
-            const playlist = await Download.getLinksFromPlaylist(l);
-            linksToDownload.push(...playlist);
-          } else {
-            linksToDownload.push(link);
-          }
-        }
+        let linksToDownload: string[] = await Links.getLinksToDownload(links);
 
         let activeDownloads = 0;
         let i = 0;
 
         setInterval(async () => {
-          if (activeDownloads <= 14) {
+          if (activeDownloads <= 14 && i < linksToDownload.length) {
             Download.downloadMP3(bar, linksToDownload[i]).finally(() => {
               activeDownloads--;
+
+              if (i == linksToDownload.length) {
+                finish();
+                return;
+              }
             });
-            activeDownloads++;
 
             i++;
-
-            if (i == linksToDownload.length) {
-              finish();
-              return;
-            }
+            activeDownloads++;
           }
         }, 100);
       } else if (v.value === "mp4") {
@@ -76,8 +68,14 @@ async function main() {
     });
 }
 
-function finish() {
-  console.log("finished downloading");
+async function finish() {
+  // console.clear();
+  console.log(chalk.green("Finished downloading"));
+  console.log(chalk.yellow("cleaning up..."));
+  await Files.removeFilesWhichAreNotMP3();
+  console.log(chalk.green("Done!"));
+
+  process.exit(0);
 }
 
 main();
