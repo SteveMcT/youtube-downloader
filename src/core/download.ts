@@ -1,5 +1,4 @@
 import { MultiBar } from "cli-progress";
-import ffmpeg from "ffmpeg";
 import Downloader from "nodejs-file-downloader";
 import { default as youtubedl, default as youtubeDlExec } from "youtube-dl-exec";
 import ytpl from "ytpl";
@@ -8,8 +7,8 @@ import Files from "./files";
 class Download {
   OUTPUTSTRINGLENGTH: number = 0;
 
-  public async downloadMP3(bar: MultiBar, link: string) {
-    return new Promise((res, rej) => {
+  public async downloadMP3(bar: MultiBar, link: string): Promise<boolean> {
+    return new Promise((res) => {
       if (link === undefined) return;
 
       // get mp3 from youtube and download
@@ -21,32 +20,36 @@ class Download {
         youtubeSkipDashManifest: true,
         referer: "https://youtube.com",
       }).then(async (output) => {
-        let goahead = true;
+        try {
+          let goahead = true;
 
-        for (let i = output.formats.length - 1; i >= 0; i--) {
-          const element = output.formats[i];
+          for (let i = output.formats.length - 1; i >= 0; i--) {
+            const element = output.formats[i];
 
-          if (element.acodec === "opus" && element.filesize && goahead) {
-            goahead = false;
+            if (element.acodec === "opus" && element.filesize && goahead) {
+              goahead = false;
 
-            const barItem = bar.create(element.filesize, 0);
-            const name = output.title.replace(/ /g, "-");
+              const barItem = bar.create(element.filesize, 0);
+              const name = output.title.replace(/[()\| "§$%/&=?*:;,']/g, "");
+              // print current status of the download in console
+              const int = setInterval(() => {
+                barItem.update(Files.getFilesize(name + ".webm.download"));
+              }, 100);
 
-            // print current status of the download in console
-            const int = setInterval(() => {
-              barItem.update(Files.getFilesize(name + ".webm.download"));
-            }, 100);
+              // download video
+              await this.download(element.url, name, ".webm");
+              clearInterval(int);
+              barItem.update(element.filesize);
+              barItem.stop();
 
-            // download video
-            await this.download(element.url, name, ".webm");
-
-            clearInterval(int);
-            barItem.update(element.filesize);
-
-            this.convertToMP3(name);
-
-            res(true);
+              // wait if file is downloaded
+              await Files.convertToMP3(name);
+              Files.removeFile(name);
+              res(true);
+            }
           }
+        } catch (e) {
+          console.log(e);
         }
       });
     });
@@ -92,33 +95,22 @@ class Download {
     const links = await ytpl(playlistID);
     let urls: string[] = [];
     links.items.forEach((item) => {
-      urls.push(item.url);
+      urls.push(item.url.split("&list")[0]);
     });
     return urls;
   }
 
   private async download(url: string, name: string, type: string) {
-    const downloader = new Downloader({
-      url: url,
-      directory: "downloads",
-      fileName: name + type,
-    });
-
-    await downloader.download();
-  }
-
-  public convertToMP3(name: string) {
-    const process = new ffmpeg("downloads/" + name + ".webm");
-
-    process
-      .then((converter) => {
-        converter.fnExtractSoundToMP3("downloads/" + name + ".mp3", (err) => {
-          return;
-        });
-      })
-      .catch((err) => {
-        console.log(err);
+    try {
+      const downloader = new Downloader({
+        url: url,
+        directory: "downloads",
+        fileName: name + type,
+        maxAttempts: 10,
       });
+
+      await downloader.download();
+    } catch (e) {}
   }
 }
 

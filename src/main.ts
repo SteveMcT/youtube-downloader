@@ -7,7 +7,7 @@ import Download from "./core/download";
 async function main() {
   console.log(chalk.blue("Welcome to the YouTube Downloader!"));
   console.log(chalk.blueBright("You need to have ffmpeg installed to use this tool."));
-  console.log(chalk.blueBright("Look inside the guide."));
+  console.log(chalk.blueBright("Look inside the guide to get more information."));
 
   cliSelect({
     values: ["mp3", "mp4"],
@@ -47,25 +47,25 @@ async function main() {
           }
         }
 
-        linksToDownload = linksToDownload.reverse();
+        let activeDownloads = 0;
+        let i = 0;
 
-        linksToDownload[Symbol.asyncIterator] = async function* () {
-          for (let link of linksToDownload) {
-            await Download.downloadMP3(bar, link);
-            yield { value: link, done: false };
+        setInterval(async () => {
+          if (activeDownloads <= 14) {
+            Download.downloadMP3(bar, linksToDownload[i]).finally(() => {
+              activeDownloads--;
+            });
+            activeDownloads++;
+
+            i++;
+
+            if (i == linksToDownload.length) {
+              finish();
+              return;
+            }
           }
-
-          yield { done: true };
-        };
-
-        (async function () {
-          for await (const part of linksToDownload) {
-            console.log(part);
-          }
-        })();
-      }
-
-      if (v.value === "mp4") {
+        }, 100);
+      } else if (v.value === "mp4") {
         for (const link of links) {
           Download.downloadMP4(bar, link);
         }
@@ -74,6 +74,10 @@ async function main() {
     .catch(() => {
       console.log(chalk.red("An Error occurred"));
     });
+}
+
+function finish() {
+  console.log("finished downloading");
 }
 
 main();
