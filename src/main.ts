@@ -34,17 +34,16 @@ async function main() {
         clearOnComplete: false,
         stopOnComplete: true,
       });
+      // adding all links to an array
+      let linksToDownload: string[] = await Links.getLinksToDownload(links);
 
-      if (v.value === "mp3") {
-        // adding all links to an array
-        let linksToDownload: string[] = await Links.getLinksToDownload(links);
+      let activeDownloads = 0;
+      let i = 0;
+      let j = 0;
 
-        let activeDownloads = 0;
-        let i = 0;
-        let j = 0;
-
-        setInterval(async () => {
-          if (activeDownloads <= 19 && i < linksToDownload.length) {
+      setInterval(async () => {
+        if (activeDownloads <= 19 && i < linksToDownload.length) {
+          if (v.value === "mp3") {
             Download.downloadMP3(bar, linksToDownload[i]).finally(() => {
               j++;
               activeDownloads--;
@@ -54,16 +53,22 @@ async function main() {
                 return;
               }
             });
+          } else if (v.value === "mp4") {
+            Download.downloadMP4(bar, linksToDownload[i]).finally(() => {
+              j++;
+              activeDownloads--;
 
-            i++;
-            activeDownloads++;
+              if (j === i) {
+                finish();
+                return;
+              }
+            });
           }
-        }, 140);
-      } else if (v.value === "mp4") {
-        for (const link of links) {
-          Download.downloadMP4(bar, link);
+
+          i++;
+          activeDownloads++;
         }
-      }
+      }, 140);
     })
     .catch(() => {
       console.log(chalk.red("An Error occurred"));

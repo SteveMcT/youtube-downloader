@@ -11,7 +11,7 @@ export default class Files {
     }
   }
 
-  public static convertToMP3(name: string, saveName: string): Promise<boolean> {
+  public static convertToMP3(name: string): Promise<boolean> {
     return new Promise((res) => {
       const process = new ffmpeg("downloads/" + name + ".webm");
 
@@ -19,13 +19,15 @@ export default class Files {
         converter.fnExtractSoundToMP3("downloads/" + name + ".mp3", (err) => {
           if (err) console.log(err);
 
-          rename("downloads/" + name + ".mp3", "downloads/" + saveName + ".mp3", (err) => {
-            if (err) console.log(err);
-          });
-
           res(true);
         });
       });
+    });
+  }
+
+  public static renameFile(name: string, saveName: string, fileType: string) {
+    rename("downloads/" + name + fileType, "downloads/" + saveName + fileType, (err) => {
+      if (err) console.log(err);
     });
   }
 

@@ -42,7 +42,8 @@ class Download {
               bar.remove(barItem);
 
               // wait if file is downloaded
-              await Files.convertToMP3(name, saveName);
+              await Files.convertToMP3(name);
+              Files.renameFile(name, saveName, "mp3");
               res(true);
             }
           }
@@ -53,37 +54,45 @@ class Download {
     });
   }
 
-  public async downloadMP4(bar: MultiBar, link: string) {
-    if (link === undefined) return;
+  public async downloadMP4(bar: MultiBar, link: string): Promise<boolean> {
+    if (!link) return;
 
-    // initialize Downloader
-    youtubedl(link, {
-      ffmpegLocation: "node_modules/ffmpeg",
-      dumpSingleJson: true,
-      noCheckCertificate: true,
-      preferFreeFormats: true,
-      youtubeSkipDashManifest: true,
-      referer: "https://youtube.com",
-    }).then(async (output) => {
-      let goahead = true;
-      output.formats.forEach(async (element) => {
-        if (element.acodec === "mp4a.40.2" && element.filesize && goahead) {
-          goahead = false;
-          const barItem = bar.create(element.filesize, 0);
-          const name = output.title;
+    return new Promise((res) => {
+      // initialize Downloader
+      youtubedl(link, {
+        ffmpegLocation: "node_modules/ffmpeg",
+        dumpSingleJson: true,
+        noCheckCertificate: true,
+        preferFreeFormats: true,
+        youtubeSkipDashManifest: true,
+        referer: "https://youtube.com",
+      }).then(async (output) => {
+        try {
+          let goahead = true;
 
-          // print current status of the download in console
-          const int = setInterval(() => {
-            barItem.update(Files.getFilesize(name + ".mp4.download"));
-          }, 100);
+          for (let i = output.formats.length - 1; i >= 0; i--) {
+            const element = output.formats[i];
 
-          // download video
-          // await this.download(element.url, name, ".mp4");
+            if (element.acodec === "mp4a.40.2" && element.filesize && goahead) {
+              goahead = false;
 
-          clearInterval(int);
-          barItem.update(element.filesize);
+              const barItem = bar.create(element.filesize, 0);
+              const name = output.title.replace(/[()\| "§$%/&=?*:;,']/g, "");
+              const saveName = name.replace(/([a-z])([A-Z])/g, "$1 $2");
 
-          return;
+              await this.download(element.url, name, ".mp4", barItem);
+
+              barItem.update(element.filesize);
+              barItem.stop();
+              bar.remove(barItem);
+
+              Files.renameFile(name, saveName, ".mp4");
+
+              res(true);
+            }
+          }
+        } catch (e) {
+          console.log(e);
         }
       });
     });
@@ -98,7 +107,7 @@ class Download {
     return urls;
   }
 
-  private async download(url: string, name: string, type: string, barItem: SingleBar): Promise<boolean> {
+  private async download(url: string, name: string, fileType: string, barItem: SingleBar): Promise<boolean> {
     return new Promise(async (res, rej) => {
       let timeOut = 0;
 
@@ -106,11 +115,11 @@ class Download {
         const downloader = new Downloader({
           url: url,
           directory: "downloads",
-          fileName: name + type,
+          fileName: name + fileType,
           maxAttempts: 2,
           timeout: 20000,
           onProgress: () => {
-            barItem.update(Files.getFilesize(name + ".webm.download"));
+            barItem.update(Files.getFilesize(name + fileType + ".download"));
             timeOut = 0;
           },
         });
