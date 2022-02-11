@@ -11,6 +11,11 @@ You need to have ffmpeg installed in order to use this software. Download it fro
   2. Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1%27))
   3. choco install ffmpeg
 
+- make sure you have node installed
+- go to your command line
+- run 'npm i'
+- run 'npm start'
+
 ## Add Links
 
 You can find a "links.txt" where you, as you might guess, can put your links in it.
