@@ -41,14 +41,15 @@ async function main() {
 
         let activeDownloads = 0;
         let i = 0;
+        let j = 0;
 
         setInterval(async () => {
-          if (activeDownloads <= 20 && i < linksToDownload.length) {
+          if (activeDownloads <= 19 && i < linksToDownload.length) {
             Download.downloadMP3(bar, linksToDownload[i]).finally(() => {
-              console.log("Hello Finished World :3");
+              j++;
               activeDownloads--;
 
-              if (i == linksToDownload.length) {
+              if (j === i) {
                 finish();
                 return;
               }

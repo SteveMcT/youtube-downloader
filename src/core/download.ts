@@ -1,5 +1,6 @@
 import { MultiBar, SingleBar } from "cli-progress";
 import Downloader from "nodejs-file-downloader";
+import { clearInterval } from "timers";
 import { default as youtubedl, default as youtubeDlExec } from "youtube-dl-exec";
 import ytpl from "ytpl";
 import Files from "./files";
@@ -97,19 +98,36 @@ class Download {
     return urls;
   }
 
-  private async download(url: string, name: string, type: string, barItem: SingleBar) {
-    try {
-      const downloader = new Downloader({
-        url: url,
-        directory: "downloads",
-        fileName: name + type,
-        maxAttempts: 2,
-        timeout: 20000,
-        onProgress: () => barItem.update(Files.getFilesize(name + ".webm.download")),
-      });
+  private async download(url: string, name: string, type: string, barItem: SingleBar): Promise<boolean> {
+    return new Promise(async (res, rej) => {
+      let timeOut = 0;
 
-      await downloader.download();
-    } catch (e) {}
+      try {
+        const downloader = new Downloader({
+          url: url,
+          directory: "downloads",
+          fileName: name + type,
+          maxAttempts: 2,
+          timeout: 20000,
+          onProgress: () => {
+            barItem.update(Files.getFilesize(name + ".webm.download"));
+            timeOut = 0;
+          },
+        });
+
+        const int = setInterval(() => {
+          timeOut += 1;
+          if (timeOut >= 30) {
+            downloader.cancel();
+            clearInterval(int);
+            rej(false);
+          }
+        }, 1000);
+
+        await downloader.download();
+        res(true);
+      } catch (e) {}
+    });
   }
 }
 
