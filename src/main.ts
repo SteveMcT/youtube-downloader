@@ -74,7 +74,7 @@ async function finish() {
   // console.clear();
   console.log(chalk.green("Finished downloading"));
   console.log(chalk.yellow("cleaning up..."));
-  await Files.removeFilesWhichAreNotMP3();
+  await Files.removeFilesWhichAreNotMP3OrMP4();
   console.log(chalk.green("Done!"));
 
   process.exit(0);

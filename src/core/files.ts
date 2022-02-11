@@ -40,14 +40,12 @@ export default class Files {
     }
   }
 
-  public static removeFilesWhichAreNotMP3() {
+  public static removeFilesWhichAreNotMP3OrMP4() {
     return new Promise((res) => {
       const files = readdirSync("downloads");
 
       files.forEach((file) => {
-        if (!file.endsWith(".mp3")) {
-          this.removeFile(file);
-        }
+        if (!file.endsWith(".mp3") && !file.endsWith(".mp4")) this.removeFile(file);
       });
       res("done");
     });
