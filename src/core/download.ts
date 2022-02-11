@@ -43,7 +43,7 @@ class Download {
 
               // wait if file is downloaded
               await Files.convertToMP3(name);
-              Files.renameFile(name, saveName, "mp3");
+              Files.renameFile(name, saveName, ".mp3");
               res(true);
             }
           }

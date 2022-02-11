@@ -25,7 +25,7 @@ async function main() {
       const file = readFileSync("./links.txt", "utf8");
       const links: string[] = file.split("\n");
 
-      // create console output
+      // create console output field
       const bar = new MultiBar({
         format: "Downloading [{bar}] {percentage}% | {value}/{total}",
         barCompleteChar: "=",
@@ -34,35 +34,29 @@ async function main() {
         clearOnComplete: false,
         stopOnComplete: true,
       });
-      // adding all links to an array
-      let linksToDownload: string[] = await Links.getLinksToDownload(links);
 
+      // adding all links to an array
+      const linksToDownload: string[] = await Links.getLinksToDownload(links);
       let activeDownloads = 0;
       let i = 0;
       let j = 0;
 
+      const cb = () => {
+        j++;
+        activeDownloads--;
+
+        if (j === i) {
+          finish();
+          return;
+        }
+      };
+
       setInterval(async () => {
         if (activeDownloads <= 19 && i < linksToDownload.length) {
           if (v.value === "mp3") {
-            Download.downloadMP3(bar, linksToDownload[i]).finally(() => {
-              j++;
-              activeDownloads--;
-
-              if (j === i) {
-                finish();
-                return;
-              }
-            });
+            Download.downloadMP3(bar, linksToDownload[i]).finally(() => cb());
           } else if (v.value === "mp4") {
-            Download.downloadMP4(bar, linksToDownload[i]).finally(() => {
-              j++;
-              activeDownloads--;
-
-              if (j === i) {
-                finish();
-                return;
-              }
-            });
+            Download.downloadMP4(bar, linksToDownload[i]).finally(() => cb());
           }
 
           i++;
