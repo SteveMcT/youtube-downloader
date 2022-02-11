@@ -7,6 +7,7 @@ You need to have ffmpeg installed in order to use this software. Download it fro
 - MAC: brew install ffmpeg
 - Linux: use your package manager
 - Windows:
+
   1. Run Get-ExecutionPolicy. If it returns Restricted, then run Set-ExecutionPolicy AllSigned or Set-ExecutionPolicy Bypass -Scope Process
   2. Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1%27))
   3. choco install ffmpeg
@@ -24,6 +25,7 @@ Just add it line by line or if you want to download a Playlist, just select the 
 ## Start the download
 
 Just open the tool and select if you want to download all links as mp3 or mp4 and let it do it's work.
+The downloaded files are located in ./downloads. If some of the downloads fail, try again. It will work better. I don't know why.
 
 ## Keep in mind
 
